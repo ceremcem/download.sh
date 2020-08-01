@@ -10,6 +10,7 @@ show_help(){
     $(basename $0) [options] http://your-url/file
     Options:
         --filename       : Use this filename instead of basename of url
+        --refresh        : Re-download the file.
 HELP
     exit
 }
@@ -26,6 +27,7 @@ die(){
 # Initialize parameters
 filename=
 url=
+refresh=
 # ---------------------------
 args=("$@")
 _count=1
@@ -39,6 +41,9 @@ while :; do
         # --------------------------------------------------------
         --filename) shift
             filename="$1"
+            ;;
+        --refresh) shift
+            refresh="yes"
             ;;
         # --------------------------------------------------------
         -*) # Handle unrecognized options
@@ -57,13 +62,14 @@ done; set -- "${args[@]}"
 url="${_arg1:-}"
 [[ -z $url ]] && die "Url is required."
 [[ -z $filename ]] && filename=$(basename $url)
+tmp="${filename}.part"
 
-if [ ! -f "${filename}" ]; then
+if [ ! -f "${filename}" ] || [[ ! -z $refresh ]]; then
   echo "Downloading ${filename}"
-  wget --continue -O "${filename}.downloading" ${url} --progress=bar:force 2>&1 | tail -f -n +6
+  wget --continue -O "${tmp}" "${url}" --progress=bar:force 2>&1 | tail -f -n +6
   # rename the partial file if download is succeeded
-  mv "${filename}.downloading" ${filename}
+  mv "${tmp}" "${filename}"
 else
-  echo "$filename is already downloaded."
+  echo "$filename is already downloaded. Use --refresh to re-download."
 fi
 
